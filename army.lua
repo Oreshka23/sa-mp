@@ -2,7 +2,7 @@
 script_name("MO Helper")
 script_author("Oscar Rain")
 script_version_number(1)
-script_version("1.0")
+script_version("1.0.1")
 
 -- Цвет настроения синий
 require "lib.moonloader"
