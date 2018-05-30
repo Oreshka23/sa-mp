@@ -1,18 +1,24 @@
 -- Я роняю запад
 script_name("MO Helper")
 script_author("Oscar Rain")
-script_version_number(2)
+script_version_number(1)
+script_version("1.0")
 
 -- Цвет настроения синий
 require "lib.moonloader"
 require "lib.sampfuncs"
 require "config.carmy"
+local dlstatus = require('moonloader').download_status
 local sampev = require "lib.samp.events"
 
 function main()
     if not isSampLoaded() or not isSampfuncsLoaded() then error(''..script_name..' needs SA:MP and SAMPFUNCS!') end
     while not isSampAvailable() do wait(100) end
-    sampAddChatMessage('[MO Helper] Загружено. Автор: Oscar Rain.', 0xD2B48C)
+    -- Проверка обновлений
+    update()
+	while update ~= false do wait(100) end
+    --
+    sampAddChatMessage('[MO Helper] Загружено. Автор: Oscar Rain. Версия: '..thisScript().version..'', 0xD2B48C)
     sampRegisterChatCommand("доклад", doklad)
     sampRegisterChatCommand("присяга", function()
         lua_thread.create(oath)
@@ -165,4 +171,37 @@ function getSexBySkin(skin)
     else
         return 0
     end
+end
+
+function update()
+	local fpath = os.getenv('TEMP') ..'\\mo-version.json'
+	downloadUrlToFile('https://raw.githubusercontent.com/Oreshka23/sa-mp/master/version.json', fpath, function(id, status, p1, p2)
+		if status == dlstatus.STATUS_ENDDOWNLOADDATA then
+		local f = io.open(fpath, 'r')
+		if f then
+			local info = decodeJson(f:read('*a'))
+			updatelink = info.updateurl
+			if info and info.latest then
+				version = tonumber(info.latest)
+				if version > tonumber(thisScript().version) then
+					lua_thread.create(goupdate)
+				else
+					update = false
+				end
+			end
+		end
+	end
+end)
+end
+-- Cкачивание актуальной версии
+function goupdate()
+    sampAddChatMessage(("[MO Helper] Обнаружено обновление. Попробую обновиться.."), 0xD2B48C)
+    sampAddChatMessage(("[MO Helper] Текущая версия: "..thisScript().version..". Новая версия: "..version), 0xD2B48C)
+    wait(300)
+    downloadUrlToFile(updatelink, thisScript().path, function(id3, status1, p13, p23)
+        if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
+            sampAddChatMessage(("[MO Helper] Обновление завершено!"), 0xD2B48C)
+            thisScript():reload()
+        end
+    end)
 end
